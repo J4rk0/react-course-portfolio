@@ -10,3 +10,10 @@ Moje portfolio z kursu Frontend Developer (React)
 - Vite
 - pnpm
 - ESLint + Prettier
+
+## Uruchomienie
+
+```bash
+pnpm install
+pnpm dev
+```

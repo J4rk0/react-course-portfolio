@@ -2,6 +2,8 @@ import { useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
+import VanillaTodo from "./exercises/1-vanilla-todo";
+
 import './App.css'
 
 function App() {
@@ -19,6 +21,7 @@ function App() {
           <h1>Get started</h1>
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
+            <VanillaTodo />
           </p>
         </div>
         <button
