@@ -1,30 +1,32 @@
 // src/exercises/1-vanilla-todo.tsx
-// Proste Todo List w czystym TypeScript + DOM (bez Reacta)
+type Todo = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
 
 export function initVanillaTodo() {
-  // Pobieramy główny element, do którego wrzucimy nasze Todo
-  // const app = document.getElementById('root') as HTMLDivElement;
-  const app = document.getElementById('vanilla-root') as HTMLDivElement;
-  if (!app) return;
+  const root = document.getElementById('vanilla-root') as HTMLDivElement;
+  if (!root) return;
 
-  // Czyścimy zawartość roota (żeby nie nakładało się na Vite template)
-  app.innerHTML = `
-    <div style="max-width: 500px; margin: 40px auto; font-family: Arial, sans-serif;">
-      <h2>Vanilla Todo (Moduł 1)</h2>
+  root.innerHTML = `
+    <div style="max-width: 600px; margin: 40px auto; font-family: Arial, sans-serif;">
+      <h1>Vanilla Todo - Moduł 1</h1>
       
       <div style="margin-bottom: 20px;">
         <input 
           type="text" 
           id="todo-input" 
           placeholder="Co trzeba zrobić?" 
-          style="padding: 10px; width: 70%; font-size: 16px;"
+          style="padding: 12px; width: 70%; font-size: 16px;"
         />
-        <button 
-          id="add-btn"
-          style="padding: 10px 20px; font-size: 16px;"
-        >
-          Dodaj
-        </button>
+        <button id="add-btn" style="padding: 12px 20px; font-size: 16px;">Dodaj</button>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <button data-filter="all" class="filter-btn active">Wszystkie</button>
+        <button data-filter="active" class="filter-btn">Aktywne</button>
+        <button data-filter="completed" class="filter-btn">Ukończone</button>
       </div>
 
       <ul id="todo-list" style="list-style: none; padding: 0;"></ul>
@@ -35,28 +37,45 @@ export function initVanillaTodo() {
     </div>
   `;
 
-  // Pobieramy elementy z HTML-a
   const input = document.getElementById('todo-input') as HTMLInputElement;
   const addBtn = document.getElementById('add-btn') as HTMLButtonElement;
   const todoList = document.getElementById('todo-list') as HTMLUListElement;
   const countSpan = document.getElementById('count') as HTMLSpanElement;
 
-  // Ładujemy zadania z localStorage
-  let todos: string[] = JSON.parse(localStorage.getItem('todos') || '[]');
+  let todos: Todo[] = JSON.parse(localStorage.getItem('todos') || '[]');
+  let currentFilter: 'all' | 'active' | 'completed' = 'all';
 
-  // Funkcja renderująca listę zadań
+  function saveTodos() {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }
+
   function renderTodos() {
     todoList.innerHTML = '';
 
-    todos.forEach((todo, index) => {
+    const filteredTodos = todos.filter(todo => {
+      if (currentFilter === 'active') return !todo.completed;
+      if (currentFilter === 'completed') return todo.completed;
+      return true; // all
+    });
+
+    filteredTodos.forEach(todo => {
       const li = document.createElement('li');
-      li.style.cssText = 'padding: 12px; background: #f9f9f9; margin: 6px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;';
+      li.style.cssText = `
+        padding: 12px; 
+        background: #f9f9f9; 
+        margin: 8px 0; 
+        border-radius: 6px; 
+        display: flex; 
+        align-items: center;
+        gap: 12px;
+      `;
 
       li.innerHTML = `
-        <span>${todo}</span>
-        <button data-index="${index}" style="background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-          Usuń
-        </button>
+        <input type="checkbox" ${todo.completed ? 'checked' : ''} data-id="${todo.id}" />
+        <span style="flex: 1; text-decoration: ${todo.completed ? 'line-through' : 'none'};">
+          ${todo.text}
+        </span>
+        <button data-id="${todo.id}" style="background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 4px;">Usuń</button>
       `;
 
       todoList.appendChild(li);
@@ -65,42 +84,61 @@ export function initVanillaTodo() {
     countSpan.textContent = todos.length.toString();
   }
 
-  // Dodawanie nowego zadania
   function addTodo() {
     const text = input.value.trim();
-    if (text === '') return;
+    if (!text) return;
 
-    todos.push(text);
-    localStorage.setItem('todos', JSON.stringify(todos));
+    todos.push({
+      id: Date.now(),
+      text,
+      completed: false
+    });
 
-    input.value = '';        // czyścimy input
-    renderTodos();           // odświeżamy listę
-  }
-
-  // Usuwanie zadania
-  function deleteTodo(index: number) {
-    todos.splice(index, 1);
-    localStorage.setItem('todos', JSON.stringify(todos));
+    saveTodos();
+    input.value = '';
     renderTodos();
   }
 
-  // Obsługa kliknięcia przycisku "Dodaj"
+  // Event Listeners
   addBtn.addEventListener('click', addTodo);
 
-  // Obsługa Enter w polu input
   input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addTodo();
   });
 
-  // Obsługa kliknięcia w przycisk "Usuń" (delegacja zdarzeń)
   todoList.addEventListener('click', (e) => {
-    const target = e.target as HTMLButtonElement;
-    if (target.tagName === 'BUTTON') {
-      const index = parseInt(target.dataset.index || '0');
-      deleteTodo(index);
+    // const target = e.target as HTMLElement;
+    const target = e.target as HTMLInputElement | HTMLButtonElement;
+
+    if (target.type === 'checkbox') {
+      const id = parseInt(target.dataset.id!);
+      const todo = todos.find(t => t.id === id);
+      if (todo) {
+        todo.completed = !todo.completed;
+        saveTodos();
+        renderTodos();
+      }
+    }
+
+    if (target.tagName === 'BUTTON' && target.textContent === 'Usuń') {
+      const id = parseInt(target.dataset.id!);
+      todos = todos.filter(t => t.id !== id);
+      saveTodos();
+      renderTodos();
     }
   });
 
-  // Pierwsze wyświetlenie listy
+  // Filtrowanie
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // currentFilter = btn.dataset.filter as 'all' | 'active' | 'completed';
+      currentFilter = (btn as HTMLButtonElement).dataset.filter as 'all' | 'active' | 'completed';
+      renderTodos();
+    });
+  });
+
   renderTodos();
 }
