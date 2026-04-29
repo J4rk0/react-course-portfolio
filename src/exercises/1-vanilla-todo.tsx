@@ -1,107 +1,106 @@
-import { useEffect } from "react";
+// src/exercises/1-vanilla-todo.tsx
+// Proste Todo List w czystym TypeScript + DOM (bez Reacta)
 
-type Todo = {
-  id: number;
-  text: string;
-  completed: boolean;
-};
+export function initVanillaTodo() {
+  // Pobieramy główny element, do którego wrzucimy nasze Todo
+  // const app = document.getElementById('root') as HTMLDivElement;
+  const app = document.getElementById('vanilla-root') as HTMLDivElement;
+  if (!app) return;
 
-export default function VanillaTodo() {
-  useEffect(() => {
-    const root = document.getElementById("vanilla-root");
-    if (!root) return;
-
-    let todos: Todo[] = JSON.parse(
-      localStorage.getItem("todos") || "[]"
-    );
-
-    let filter: "all" | "active" | "completed" = "all";
-
-    root.innerHTML = `
-      <div>
-        <h2>Vanilla Todo</h2>
-        <input id="todo-input" placeholder="Add todo..." />
-        <button id="add-btn">Add</button>
-
-        <div style="margin-top:10px;">
-          <button data-filter="all">All</button>
-          <button data-filter="active">Active</button>
-          <button data-filter="completed">Completed</button>
-        </div>
-
-        <ul id="todo-list"></ul>
+  // Czyścimy zawartość roota (żeby nie nakładało się na Vite template)
+  app.innerHTML = `
+    <div style="max-width: 500px; margin: 40px auto; font-family: Arial, sans-serif;">
+      <h2>Vanilla Todo (Moduł 1)</h2>
+      
+      <div style="margin-bottom: 20px;">
+        <input 
+          type="text" 
+          id="todo-input" 
+          placeholder="Co trzeba zrobić?" 
+          style="padding: 10px; width: 70%; font-size: 16px;"
+        />
+        <button 
+          id="add-btn"
+          style="padding: 10px 20px; font-size: 16px;"
+        >
+          Dodaj
+        </button>
       </div>
-    `;
 
-    const input = document.getElementById("todo-input") as HTMLInputElement;
-    const list = document.getElementById("todo-list") as HTMLUListElement;
+      <ul id="todo-list" style="list-style: none; padding: 0;"></ul>
 
-    function save() {
-      localStorage.setItem("todos", JSON.stringify(todos));
-      render();
-    }
+      <div style="margin-top: 20px; font-size: 14px; color: #666;">
+        <span id="count">0</span> zadań
+      </div>
+    </div>
+  `;
 
-    function render() {
-      list.innerHTML = "";
+  // Pobieramy elementy z HTML-a
+  const input = document.getElementById('todo-input') as HTMLInputElement;
+  const addBtn = document.getElementById('add-btn') as HTMLButtonElement;
+  const todoList = document.getElementById('todo-list') as HTMLUListElement;
+  const countSpan = document.getElementById('count') as HTMLSpanElement;
 
-      let filtered = todos;
+  // Ładujemy zadania z localStorage
+  let todos: string[] = JSON.parse(localStorage.getItem('todos') || '[]');
 
-      if (filter === "active") {
-        filtered = todos.filter((t) => !t.completed);
-      } else if (filter === "completed") {
-        filtered = todos.filter((t) => t.completed);
-      }
+  // Funkcja renderująca listę zadań
+  function renderTodos() {
+    todoList.innerHTML = '';
 
-      filtered.forEach((todo) => {
-        const li = document.createElement("li");
+    todos.forEach((todo, index) => {
+      const li = document.createElement('li');
+      li.style.cssText = 'padding: 12px; background: #f9f9f9; margin: 6px 0; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;';
 
-        const span = document.createElement("span");
-        span.textContent = todo.text;
-        span.style.textDecoration = todo.completed ? "line-through" : "none";
-        span.style.cursor = "pointer";
+      li.innerHTML = `
+        <span>${todo}</span>
+        <button data-index="${index}" style="background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+          Usuń
+        </button>
+      `;
 
-        span.onclick = () => {
-          todo.completed = !todo.completed;
-          save();
-        };
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "X";
-        delBtn.style.marginLeft = "10px";
-
-        delBtn.onclick = () => {
-          todos = todos.filter((t) => t.id !== todo.id);
-          save();
-        };
-
-        li.appendChild(span);
-        li.appendChild(delBtn);
-        list.appendChild(li);
-      });
-    }
-
-    document.getElementById("add-btn")!.onclick = () => {
-      if (!input.value.trim()) return;
-
-      todos.push({
-        id: Date.now(),
-        text: input.value,
-        completed: false,
-      });
-
-      input.value = "";
-      save();
-    };
-
-    document.querySelectorAll("[data-filter]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        filter = btn.getAttribute("data-filter") as any;
-        render();
-      });
+      todoList.appendChild(li);
     });
 
-    render();
-  }, []);
+    countSpan.textContent = todos.length.toString();
+  }
 
-  return <div id="vanilla-root"> </div>;
+  // Dodawanie nowego zadania
+  function addTodo() {
+    const text = input.value.trim();
+    if (text === '') return;
+
+    todos.push(text);
+    localStorage.setItem('todos', JSON.stringify(todos));
+
+    input.value = '';        // czyścimy input
+    renderTodos();           // odświeżamy listę
+  }
+
+  // Usuwanie zadania
+  function deleteTodo(index: number) {
+    todos.splice(index, 1);
+    localStorage.setItem('todos', JSON.stringify(todos));
+    renderTodos();
+  }
+
+  // Obsługa kliknięcia przycisku "Dodaj"
+  addBtn.addEventListener('click', addTodo);
+
+  // Obsługa Enter w polu input
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addTodo();
+  });
+
+  // Obsługa kliknięcia w przycisk "Usuń" (delegacja zdarzeń)
+  todoList.addEventListener('click', (e) => {
+    const target = e.target as HTMLButtonElement;
+    if (target.tagName === 'BUTTON') {
+      const index = parseInt(target.dataset.index || '0');
+      deleteTodo(index);
+    }
+  });
+
+  // Pierwsze wyświetlenie listy
+  renderTodos();
 }

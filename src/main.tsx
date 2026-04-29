@@ -1,10 +1,12 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+// import { StrictMode } from 'react'
+// import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import { initVanillaTodo } from './exercises/1-vanilla-todo'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+const rootElement = document.getElementById('root')!;
+
+// Czyścimy root i przygotowujemy miejsce dla vanilla todo
+rootElement.innerHTML = '<div id="vanilla-root"></div>';
+
+// Uruchamiamy nasze Todo
+initVanillaTodo();
